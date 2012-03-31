@@ -120,4 +120,40 @@ class FourVector(object) :
     eta = property(**eta())
 
     def __add__(self, other) :
+        """Add with another FourVector"""
         return FourVector(self.x+other.x, self.y+other.y, self.z+other.z, self.t+other.t)
+
+    def __iadd__(self, other) :
+        """In place add to another FourVector"""
+        self = self + other
+
+    def __neg__(self, other) :
+        """Negative of all components"""
+        self.x = -self.x
+        self.y = -self.y
+        self.z = -self.z
+        self.t = -self.t
+
+    def __sub__(self, other) :
+        """Subtract another FourVector"""
+        return self + -other
+
+    def __isub__(self, other) :
+        """In-place subtract another FourVector"""
+        self = self - other
+
+    def __mul__(self, scalar) :
+        """Multiply all components by a scalar"""
+        return FourVector(self.x*scalar, self.y*scalar, self.z*scalar, self.t*scalar)
+
+    def __imul__(self, scalar) :
+        """Multiply all components by a scalar in place"""
+        self = self*scalar
+
+    def dot(self, other) :
+        """Scalar product with another FourVector"""
+        return self.t*other.t-self.x*other.x-self.y*other.y-self.z*other.z
+
+    def __eq__(self, other) :
+        """Compare to another FourVector"""
+        return (self.x == other.x) and (self.y == other.y) and (self.z == other.z) and (self.t == other.t)
