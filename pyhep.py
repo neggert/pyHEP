@@ -157,3 +157,50 @@ class FourVector(object) :
     def __eq__(self, other) :
         """Compare to another FourVector"""
         return (self.x == other.x) and (self.y == other.y) and (self.z == other.z) and (self.t == other.t)
+
+class Particle(object):
+    """Class representing of a particle"""
+    def __init__(self, p4, pdgID, charge):
+        self.p4 = p4
+        self.pdgID = pdgID
+        self.charge = charge
+    
+    def p4():
+        doc = "The four-momentum of the particle"
+        def fget(self):
+            return self._p4
+        def fset(self, value):
+            self._p4 = value
+        return locals()
+    p4 = property(**p4())
+
+    def pdgID():
+        doc = "The Particle Data Group ID number"
+        def fget(self):
+            return self._pdgID
+        def fset(self, value):
+            self._pdgID = value
+        return locals()
+    pdgID = property(**pdgID())
+
+    def charge():
+        doc = "The particle's charge"
+        def fget(self):
+            return self._charge
+        def fset(self, value):
+            self._charge = value
+        return locals()
+    charge = property(**charge())
+
+    def isolation():
+        doc = "The isolation property."
+        def fget(self):
+            try :
+                return self._isolation
+            except AttributeError :
+                raise UnboundLocalError('isolation must be set before it can be used')
+        def fset(self, value):
+            self._isolation = value
+        return locals()
+    isolation = property(**isolation())
+        
