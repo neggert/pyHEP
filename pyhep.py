@@ -160,11 +160,10 @@ class FourVector(object) :
 
 class Particle(object):
     """Class representing of a particle"""
-    def __init__(self, p4, pdgID, charge):
+    def __init__(self, p4, pdgID):
         self.p4 = p4
         self.pdgID = pdgID
-        self.charge = charge
-    
+
     def p4():
         doc = "The four-momentum of the particle"
         def fget(self):
@@ -192,6 +191,17 @@ class Particle(object):
         return locals()
     charge = property(**charge())
 
+    def status():
+        doc = "The status property."
+        def fget(self):
+            return self._status
+        def fset(self, value):
+            self._status = value
+        def fdel(self):
+            del self._status
+        return locals()
+    status = property(**status())
+
     def isolation():
         doc = "The isolation property."
         def fget(self):
@@ -203,4 +213,49 @@ class Particle(object):
             self._isolation = value
         return locals()
     isolation = property(**isolation())
-        
+
+class Event(object):
+    """
+    Class representing an event. For now this is just a list of particles and a dict for metadata
+    """
+    metadata = {}
+    def __init__(self, *args) :
+        """Initilialize empty or with a list of particles"""
+        if len(args) == 0 :
+            self.particles_ = []
+        elif len(args) == 1 :
+            self.particles_ = args[0]
+
+    def particles(self) :
+        """Return only the stable particles in the event"""
+        return filter(lambda p : (p.status == 1) or (p.status == None), self.particles_)
+
+    def add_particle(self, particle) :
+        self.particles_.append(particle)
+
+import LesHouchesEvents as LHE
+
+def LHEvents( filename ) :
+    """Import events from LHE files. Return a list of Events"""
+    lhe = LHE.LHEventReader(filename)
+    events_out = []
+    for lhe_event in lhe.events :
+        particles = map(LHE_particle_to_pyhep, lhe_event.particles)
+        event = Event(particles)
+        event.metadata['comment'] = lhe_event.comment
+        event.metadata['idprup'] = lhe_event.idprup()
+        events_out.append(event)
+
+    return events_out
+
+def LHE_particle_to_pyhep(p) :
+    """Convert an LHE particle to a pyhep particle"""
+    p4 = FourVector(p.px(), p.py(), p.pz(), p.energy())
+    pdgID = p.idup()
+    status = p.istup()
+
+    p_out = Particle(p4, pdgID)
+    p_out.status = status
+
+    return p_out
+
