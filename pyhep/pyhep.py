@@ -218,13 +218,24 @@ class Event(object):
     """
     Class representing an event. For now this is just a list of particles and a dict for metadata
     """
-    metadata = {}
     def __init__(self, *args) :
         """Initilialize empty or with a list of particles"""
         if len(args) == 0 :
             self.particles_ = []
         elif len(args) == 1 :
             self.particles_ = args[0]
+        self.metadata = {}
+
+    def metadata():
+        doc = "The metadata property."
+        def fget(self):
+            return self._metadata
+        def fset(self, value):
+            self._metadata = value
+        def fdel(self):
+            del self._metadata
+        return locals()
+    metadata = property(**metadata())
 
     def particles(self) :
         """Return only the stable particles in the event"""
