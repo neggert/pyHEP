@@ -13,6 +13,7 @@ def convert_from_LHE( infilename, outfilename) :
         event.metadata['idprup'] = lhe_event.idprup()
         ec.add_event(event)
 
+    ec.save()
     return ec
 
 def LHE_particle_to_pyhep(p) :
