@@ -114,8 +114,11 @@ class LHEvent:
 class LHEventReader:
     def __init__(self, filename, max_events=None):
         self.init = None
-        self.events = []
-        for event, elem in ET.iterparse(filename):
+        self.filename = filename
+        self.max_events = max_events
+        self.evnum = 0
+    def events(self) :
+        for event, elem in ET.iterparse(self.filename):
             if elem.tag == 'init':
                 self.init = elem.text
             elif elem.tag == 'event':
@@ -123,9 +126,10 @@ class LHEventReader:
                 header = e[0]
                 particle_lines = e[1:]
                 lhe = LHEvent(header, particle_lines)
-                self.events.append(lhe)
-                if len(self.events) == max_events:
-                    break
+                yield lhe
+                self.evnum += 1
+                if self.evnum == self.max_events:
+                    raise StopIteration
 
 __all__ = [
     'LHParticle',

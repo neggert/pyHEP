@@ -7,7 +7,9 @@ Author: Nic Eggert (nse23@cornell.edu)
 
 from math import sqrt, sin, cos, tan, atan2, acos, log, sinh
 
-class FourVector(object) :
+import persistent
+
+class FourVector(persistent.Persistent) :
     """A four-vector class"""
     def __init__ (self, *args) :
         """Initialize using cartesian coordinates or nothing"""
@@ -158,7 +160,7 @@ class FourVector(object) :
         """Compare to another FourVector"""
         return (self.x == other.x) and (self.y == other.y) and (self.z == other.z) and (self.t == other.t)
 
-class Particle(object):
+class Particle(persistent.Persistent):
     """Class representing of a particle"""
     def __init__(self, p4, pdgID):
         self.p4 = p4
@@ -214,7 +216,7 @@ class Particle(object):
         return locals()
     isolation = property(**isolation())
 
-class Event(object):
+class Event(persistent.Persistent):
     """
     Class representing an event. For now this is just a list of particles and a dict for metadata
     """
@@ -244,29 +246,7 @@ class Event(object):
     def add_particle(self, particle) :
         self.particles_.append(particle)
 
-import LesHouchesEvents as LHE
 
-def LHEvents( filename ) :
-    """Import events from LHE files. Return a list of Events"""
-    lhe = LHE.LHEventReader(filename)
-    events_out = []
-    for lhe_event in lhe.events :
-        particles = map(LHE_particle_to_pyhep, lhe_event.particles)
-        event = Event(particles)
-        event.metadata['comment'] = lhe_event.comment
-        event.metadata['idprup'] = lhe_event.idprup()
-        events_out.append(event)
 
-    return events_out
 
-def LHE_particle_to_pyhep(p) :
-    """Convert an LHE particle to a pyhep particle"""
-    p4 = FourVector(p.px(), p.py(), p.pz(), p.energy())
-    pdgID = p.idup()
-    status = p.istup()
-
-    p_out = Particle(p4, pdgID)
-    p_out.status = status
-
-    return p_out
 
