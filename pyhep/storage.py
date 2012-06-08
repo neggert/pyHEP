@@ -3,12 +3,34 @@ from ZODB.DB import DB
 import transaction
 
 class EventCollection(object) :
+    events_since_save = 0
+    storage = None
+    db = None
+    connection = None
+    store = None
+    events_since_save = 0
+
     def __init__(self, filename) :
-        self.storage = FileStorage(filename)
+        self.filename = filename
+        self.open()
+
+    def __enter__(self) :
+        pass
+
+    def __exit__(self, type, value, traceback) :
+        self.close()
+
+    def open(self) :
+        self.storage = FileStorage(self.filename)
         self.db = DB(self.storage)
         self.connection = self.db.open()
         self.store = self.connection.root()
         self.events_since_save = 0
+        return self
+
+    def close(self) :
+        self.connection.close()
+        self.storage.close()
 
     def new_key(self) :
         return max(self.store.keys())+1 if self.store.keys() else 0
@@ -27,3 +49,4 @@ class EventCollection(object) :
             print "Saving..."
             self.events_since_save = 0
             self.save()
+
