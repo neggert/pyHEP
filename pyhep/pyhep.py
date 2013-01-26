@@ -8,6 +8,7 @@ Author: Nic Eggert (nse23@cornell.edu)
 from math import sqrt, sin, cos, tan, atan2, acos, log, sinh
 
 import persistent
+import functools
 
 class FourVector(persistent.Persistent) :
     """A four-vector class"""
@@ -64,12 +65,12 @@ class FourVector(persistent.Persistent) :
         return locals()
     p = property(**p())
 
-    def m():
+    def mass():
         doc = "Particle mass"
         def fget(self):
             return sqrt(self.energy**2-self.p**2)
         return locals()
-    m = property(**m())
+    mass = property(**mass())
 
     def l():
         doc = "Length of 3-vector"
@@ -239,12 +240,29 @@ class Event(persistent.Persistent):
         return locals()
     metadata = property(**metadata())
 
-    def particles(self) :
-        """Return only the stable particles in the event"""
-        return filter(lambda p : (p.status == 1) or (p.status == None), self.particles_)
+    def particles(self, selection_func=None) :
+        """
+        Return particles in an event, optionally passed through a filter
+
+        Arguments:
+        selection_func - None, or a function that takes a single particle as an argument
+        and returns a boolean indicating whether the particle should be included.
+        """
+        if selection_func == None:
+            return self.particles_
+        else:
+            return filter(selection_func, self.particles_)
+
+    def particles_with_pdgId(self, pdgId):
+        particle_filter = functools.partial(_filter_by_pdgId, pdgId=pdgId)
+        return self.particles(particle_filter)
 
     def add_particle(self, particle) :
         self.particles_.append(particle)
+
+def _filter_by_pdgId(particle, pdgId):
+    """Function for filtering particles py pdgID"""
+    return abs(particle.pdgID) == pdgId
 
 
 
