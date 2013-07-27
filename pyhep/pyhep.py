@@ -45,9 +45,9 @@ class FourMomentum(persistent.Persistent):
     You can also perform arithemetic with FourMomenta as you might expect
     >>> p4b = FourMomentum.from_x_y_z_m(30,20,10,40)
     >>> (p4+p4b).pt
-    96.48246647112506
+    64.53190708727553
     >>> (p4*3).pt
-    327.6246013042608
+    234.30749027719958
 
     Note that under the hood, this class keeps track of the x,y,z, and s
     components, where s is the measure or invariant mass, and is immutable.
@@ -58,7 +58,7 @@ class FourMomentum(persistent.Persistent):
         self.x = 0.
         self.y = 0.
         self.z = 0.
-        self.m = 0.
+        self._m = 0.
 
     @classmethod
     def from_x_y_z_m(cls, x, y, z, m):
@@ -74,7 +74,7 @@ class FourMomentum(persistent.Persistent):
         p4.x = x
         p4.y = y
         p4.z = z
-        p4.m = m
+        p4._m = m
         return p4
 
     @classmethod
@@ -194,7 +194,7 @@ class FourMomentum(persistent.Persistent):
     @property
     def mass(self):
         """The invariant mass. Immutatable"""
-        return self.m
+        return self._m
     
     @mass.setter
     def mass(self, value):
@@ -232,7 +232,7 @@ class FourMomentum(persistent.Persistent):
     @property
     def energy(self):
         """The energy of the four-vector."""
-        return sqrt(self.m**2+self.p**2)
+        return sqrt(self.mass**2+self.p**2)
 
     @energy.setter
     def energy(self, value):
@@ -371,43 +371,130 @@ class FourMomentum(persistent.Persistent):
         self.theta = theta
 
     def __add__(self, other) :
-        """Add with another FourMomentum"""
-        return FourMomentum(self.x+other.x, self.y+other.y, self.z+other.z, self.t+other.t)
+        """
+        Add with another FourMomentum
+
+        Example:
+        >>> pa = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> pb = FourMomentum.from_x_y_z_e(20,30,40,70)
+        >>> (pa+pb).px
+        30
+        >>> (pa+pb).energy
+        110.0
+        """
+        return self.from_x_y_z_e(self.x+other.x, self.y+other.y, self.z+other.z, self.energy+other.energy)
 
     def __iadd__(self, other) :
-        """In place add to another FourMomentum"""
-        self = self + other
+        """
+        In place add to another FourMomentum
 
-    def __neg__(self, other) :
-        """Negative of all components"""
-        self.x = -self.x
-        self.y = -self.y
-        self.z = -self.z
-        self.t = -self.t
+        Example:
+        >>> pa = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> pb = FourMomentum.from_x_y_z_e(20,30,40,70)
+        >>> pa += pb
+        >>> pa.energy
+        110.0
+        """
+        return self + other
+
+    def __neg__(self) :
+        """
+        Negative of all space-like components
+
+        Example:
+        >>> p4 = FourMomentum.from_x_y_z_m(10,20,30,40)
+        >>> (-p4).px
+        -10
+        >>> (-p4).py
+        -20
+        >>> (-p4).pz
+        -30
+        >>> round((-p4).energy, 6)
+        54.772256
+        """
+        return self.from_x_y_z_m(-self.x, -self.y, -self.z, self._m)
 
     def __sub__(self, other) :
-        """Subtract another FourMomentum"""
+        """
+        Subtract another FourMomentum
+
+        Example:
+        >>> pa = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> pb = FourMomentum.from_x_y_z_e(20,30,40,70)
+        >>> (pa-pb).px
+        -10
+        >>> (pa+pb).energy
+        110.0
+        """
         return self + -other
 
     def __isub__(self, other) :
-        """In-place subtract another FourMomentum"""
-        self = self - other
+        """
+        In place subtract another FourMomentum
+
+        Example:
+        >>> pa = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> pb = FourMomentum.from_x_y_z_e(20,30,40,70)
+        >>> pa -= pb
+        >>> pa.px
+        -10
+        """
+        return self - other
 
     def __mul__(self, scalar) :
-        """Multiply all components by a scalar"""
-        return FourMomentum(self.x*scalar, self.y*scalar, self.z*scalar, self.t*scalar)
+        """
+        Multiply all components by a scalar
+
+        Example:
+        >>> pa = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> (pa*2).px
+        20
+        >>> (pa*2).energy
+        80.0
+        """
+
+        return FourMomentum.from_x_y_z_e(self.x*scalar, self.y*scalar, self.z*scalar, self.energy*scalar)
+
+    def __rmul__(self, scalar):
+        """
+        Multiply all components by a scalar
+
+        Example:
+        >>> pa = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> (2*pa).px
+        20
+        >>> (2*pa).energy
+        80.0
+        """
+        return self*scalar
 
     def __imul__(self, scalar) :
         """Multiply all components by a scalar in place"""
-        self = self*scalar
+        return self*scalar
 
     def dot(self, other) :
-        """Scalar product with another FourMomentum"""
-        return self.t*other.t-self.x*other.x-self.y*other.y-self.z*other.z
+        """
+        Scalar product with another FourMomentum
+
+        Example:
+        >>> pa = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> pb = FourMomentum.from_x_y_z_e(20,30,40,70)
+        >>> pa.dot(pb)
+        800.0
+        """
+        return self.energy*other.energy-self.x*other.x-self.y*other.y-self.z*other.z
 
     def __eq__(self, other) :
-        """Compare to another FourMomentum"""
-        return (self.x == other.x) and (self.y == other.y) and (self.z == other.z) and (self.t == other.t)
+        """
+        Compare to another FourMomentum
+
+        Example
+        >>> pa = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> pb = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> pa == pb
+        True
+        """
+        return (self.x == other.x) and (self.y == other.y) and (self.z == other.z) and (self._m == other._m)
 
 class Particle(persistent.Persistent):
     """
