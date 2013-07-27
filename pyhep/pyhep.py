@@ -5,7 +5,7 @@ but implemented in a more python-like way.
 Author: Nic Eggert (nse23@cornell.edu)
 """
 
-from math import sqrt, sin, cos, tan, atan2, acos, log, sinh
+from math import sqrt, sin, cos, tan, atan, atan2, acos, log, exp, pi
 
 import persistent
 import functools
@@ -98,7 +98,7 @@ class FourMomentum(persistent.Persistent):
         Example:
         >>> p4 = FourMomentum.from_pt_theta_phi_m(30,1,3,40)
         >>> round(p4.energy, 6)
-        61.711823
+        61.796551
         """
         x = pt*sin(phi)
         y = pt*sin(phi)
@@ -118,6 +118,49 @@ class FourMomentum(persistent.Persistent):
         """
         x = pt*sin(phi)
         y = pt*sin(phi)
+        z = pt*tan(theta)
+        return cls.from_x_y_z_e(x, y, z, e)
+
+    @classmethod
+    def from_pt_eta_phi_m(cls, pt, eta, phi, m):
+        """
+        Initialize from transvsere momentum, angles, and the mass
+
+        Example:
+        >>> p4 = FourMomentum.from_pt_eta_phi_m(30,1,0.5,40)
+        >>> round(p4.theta, 6)
+        0.672786
+        >>> round(p4.energy, 6)
+        51.627351
+        """
+        x = pt*sin(phi)
+        y = pt*sin(phi)
+        theta = 2*atan(-exp(eta))
+        while theta > pi:
+            theta -= pi
+        while theta < 0:
+            theta += pi
+        z = pt*tan(theta)
+        m = m
+        return cls.from_x_y_z_m(x, y, z, m)
+
+    @classmethod
+    def from_pt_eta_phi_e(cls, pt, eta, phi, e):
+        """
+        Initialize from transvsere momentum, angles, and the mass
+
+        Example:
+        >>> p4 = FourMomentum.from_pt_eta_phi_e(30,1,0.5,40)
+        >>> round(p4.mass, 6)
+        23.121777
+        """
+        x = pt*sin(phi)
+        y = pt*sin(phi)
+        theta = 2*atan(-exp(eta))
+        while theta > pi:
+            theta -= pi
+        while theta < 0:
+            theta += pi
         z = pt*tan(theta)
         return cls.from_x_y_z_e(x, y, z, e)
 
@@ -320,7 +363,12 @@ class FourMomentum(persistent.Persistent):
     
     @eta.setter
     def eta(self, value):
-        raise NotImplementedError("Eta cannot be set")
+        theta = 2*atan(-exp(value))
+        while theta > pi:
+            theta -= pi
+        while theta < 0:
+            theta += pi
+        self.theta = theta
 
     def __add__(self, other) :
         """Add with another FourMomentum"""
