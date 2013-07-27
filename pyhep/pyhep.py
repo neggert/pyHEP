@@ -10,124 +10,324 @@ from math import sqrt, sin, cos, tan, atan2, acos, log, sinh
 import persistent
 import functools
 
-class FourVector(persistent.Persistent) :
-    """A four-vector class"""
-    def __init__ (self, *args) :
+
+class FourMomentum(persistent.Persistent):
+    """
+    A four-vector class. Components in various representations are accessed
+    using properties that act just like data members.
+
+    For example, we can specify a four-vector in cartesian coordinates, then
+    ask for its components in pt-eta-phi coordinates.
+
+    >>> p4 = FourMomentum.from_x_y_z_m(50,60,70,10)
+    >>> p4.eta
+    0.8060830589013741
+    >>> p4.theta
+    0.8400523908062
+    >>> p4.phi
+    0.8760580505981934
+    >>> p4.energy
+    105.35653752852738
+
+    You can set the components however you want and the underlying structure
+    will change in a sensible way. For example, setting the phi component
+    leaves the z direction alone, as well as the magnitude of the vector in
+    the x-y plane, but changes x and y so that the vector has the requested
+    value of phi. For components where the correct action would be ambiguous,
+    the setter is not implemented.
+
+    >>> p4.phi = -1.2
+    >>> p4.px
+    -72.79457969107862
+    >>> p4.py
+    28.301045344637032
+
+    You can also perform arithemetic with FourMomenta as you might expect
+    >>> p4b = FourMomentum.from_x_y_z_m(30,20,10,40)
+    >>> (p4+p4b).pt
+    96.48246647112506
+    >>> (p4*3).pt
+    327.6246013042608
+
+    Note that under the hood, this class keeps track of the x,y,z, and s
+    components, where s is the measure or invariant mass, and is immutable.
+    Everything else is calculated on the fly.
+    """
+    def __init__(self):
         """Initialize using cartesian coordinates or nothing"""
-        if len(args) == 4 :
-            self.x, self.y, self.z, self.t = args
-        else :
-            self.x = 0.
-            self.y = 0.
-            self.z = 0.
-            self.t = 0.
+        self.x = 0.
+        self.y = 0.
+        self.z = 0.
+        self.m = 0.
 
-    def px():
-        doc = "The px property."
-        def fget(self):
-            return self.x
-        def fset(self, value):
+    @classmethod
+    def from_x_y_z_m(cls, x, y, z, m):
+        """
+        Initialize from three-momentum components and the mass
+
+        Example:
+        >>> p4 = FourMomentum.from_x_y_z_m(5,5,5,40)
+        >>> round(p4.energy, 6)
+        40.926764
+        """
+        p4 = cls()
+        p4.x = x
+        p4.y = y
+        p4.z = z
+        p4.m = m
+        return p4
+
+    @classmethod
+    def from_x_y_z_e(cls, x, y, z, e):
+        """
+        Initialize from three-momentum components and the energy
+
+        Example:
+        >>> p4 = FourMomentum.from_x_y_z_e(5,5,5,40)
+        >>> round(p4.mass, 6)
+        39.051248
+        """
+        m = sqrt(e**2-x**2-y**2-z**2)
+        return cls.from_x_y_z_m(x, y, z, m)
+
+    @classmethod
+    def from_pt_theta_phi_m(cls, pt, theta, phi, m):
+        """
+        Initialize from transvsere momentum, angles, and the mass
+
+        Example:
+        >>> p4 = FourMomentum.from_pt_theta_phi_m(30,1,3,40)
+        >>> round(p4.energy, 6)
+        61.711823
+        """
+        x = pt*sin(phi)
+        y = pt*sin(phi)
+        z = pt*tan(theta)
+        m = m
+        return cls.from_x_y_z_m(x, y, z, m)
+
+    @classmethod
+    def from_pt_theta_phi_e(cls, pt, theta, phi, e):
+        """
+        Initialize from transvsere momentum, angles, and the energy
+
+        Example:
+        >>> p4 = FourMomentum.from_pt_theta_phi_e(30,1,3,60)
+        >>> round(p4.mass, 6)
+        37.164315
+        """
+        x = pt*sin(phi)
+        y = pt*sin(phi)
+        z = pt*tan(theta)
+        return cls.from_x_y_z_e(x, y, z, e)
+
+    @property
+    def px(self):
+        """The x component of the momentum."""
+        return self.x
+
+    @px.setter
+    def px(self, value):
             self.x = value
-        return locals()
-    px = property(**px())
 
-    def py():
-        doc = "The py property."
-        def fget(self):
-            return self.y
-        def fset(self, value):
-            self.y = value
-        return locals()
-    py = property(**py())
+    @property
+    def py(self):
+        """The y component of the momentum"""
+        return self.y
+    
+    @py.setter
+    def py(self, value):
+        self.y = value
 
-    def pz():
-        doc = "The pz property."
-        def fget(self):
-            return self.z
-        def fset(self, value):
-            self.z = value
-        return locals()
-    pz = property(**pz())
+    @property
+    def pz(self):
+        """The z component of the momentum"""
+        return self.z
+    
+    @pz.setter
+    def pz(self, value):
+        self.z = value
 
-    def energy():
-        doc = "The energy property."
-        def fget(self):
-            return self.t
-        def fset(self, value):
-            self.t = value
-        return locals()
-    energy = property(**energy())
+    @property
+    def mass(self):
+        """The invariant mass. Immutatable"""
+        return self.m
+    
+    @mass.setter
+    def mass(self, value):
+        raise NotImplementedError("Cannot change the invariant mass of a FourMomentum")
 
-    def p():
-        doc = "Particle 3-momentum magnitude"
-        def fget(self):
-            return self.l
-        return locals()
-    p = property(**p())
+    @property
+    def p(self):
+        """
+        The magnitude of the three-momentum. This is just sqrt(px^2+py^2+pz^2). Setting the
+        momentum fixes the angles and mass, but changes the momentum vector and energy.
+        For example:
 
-    def mass():
-        doc = "Particle mass"
-        def fget(self):
-            return sqrt(self.energy**2-self.p**2)
-        return locals()
-    mass = property(**mass())
+        >>> p4 = FourMomentum.from_x_y_z_m(5,5,5,40)
+        >>> round(p4.p, 6)
+        8.660254
+        >>> p4.p = 30
+        >>> round(p4.theta, 6)
+        0.955317
+        >>> round(p4.phi, 6)
+        0.785398
+        >>> round(p4.energy, 6)
+        50.0
+        >>> round(p4.pt, 6)
+        24.494897
+        """
+        return sqrt(self.x**2+self.y**2+self.z**2)
+    
+    @p.setter
+    def p(self, value):
+        """Set the magnitude of the three-momentum"""
+        theta = self.theta
+        self.pt = value*abs(sin(theta))
+        self.pz = value*cos(theta)
 
-    def l():
-        doc = "Length of 3-vector"
-        def fget(self):
-            return sqrt(self.x**2+self.y**2+self.z**2)
-        return locals()
-    l = property(**l())
+    @property
+    def energy(self):
+        """The energy of the four-vector."""
+        return sqrt(self.m**2+self.p**2)
 
-    def pt():
-        doc = "Transverse momentum"
-        def fget(self):
-            return sqrt(self.px**2+self.py**2)
-        def fset(self, value):
-            # preserve polar and azimuthal angle
-            self.px = value*sin(self.phi)
-            self.py = value*cos(self.phi)
-            self.energy = self.p**2+self.m**2
-        return locals()
-    pt = property(**pt())
+    @energy.setter
+    def energy(self, value):
+        """
+        Set the energy of the four-vector. Leave the mass and angles fixed, change the magnitude of the 3-vector
 
-    def phi():
-        doc = "The azimuthal angle"
-        def fget(self):
-            return atan2(self.y, self.x)
-        def fset(self, value):
-            self.x = self.l*sin(value)
-            self.y = self.l*cos(value)
-        return locals()
-    phi = property(**phi())
+        Example:
+        >>> p4 = FourMomentum(50,60,70,10)
+        >>> round(p4.energy, 6)
+        105.35653752852738
+        >>> p4.energy = 150
+        >>> round(p4.p, 6)
+        149.66629547095766
+        """
+        if value < 0:
+            raise ValueError("energy must be greater than or equal to 0.")
+        new_p = sqrt(value**2-self.mass**2)
+        # scale all of the momentum components to give the correct total momentum
+        scale = new_p/self.p
+        self.px *= scale
+        self.py *= scale
+        self.pz *= scale
 
-    def theta():
-        doc = "The polar angle"
-        def fget(self):
-            return acos(self.z/self.l)
-        def fset(self, value):
-            # preserve total momentum
-            self.pt = self.l*sin(value)
-            self.z = self.l*cos(value)
-        return locals()
-    theta = property(**theta())
 
-    def eta():
-        doc = "Pseudo-rapidity"
-        def fget(self):
-            return -log(tan(self.theta/2))
-        def fset(self, value):
-            # preserve pt
-            self.pz = self.pt*sinh(value)
-        return locals()
-    eta = property(**eta())
+    @property
+    def pt(self):
+        """
+        The transverse momentum. That is, the momentum in the x-y plane.
+        Calculated by sqrt(px**2+py**2).
+
+        When the transverse momentum is set, keep the polar and azimuthal
+        angles fixed, as well as the mass.
+
+        Example:
+        >>> p4 = FourMomentum.from_x_y_z_m(5,5,5,40)
+        >>> round(p4.pt, 6)
+        7.071068
+        >>> p4.pt = 30
+        >>> round(p4.px, 6)
+        21.213203
+        >>> round(p4.py, 6)
+        21.213203
+        >>> round(p4.pz, 6)
+        5.0
+        >>> round(p4.energy, 6)
+        50.249378
+        >>> round(p4.phi, 6)
+        0.785398
+        """
+        return sqrt(self.x**2+self.y**2)
+    
+    @pt.setter
+    def pt(self, value):
+        """
+        Set the transverse momentum, keeping the polar and azimuthal angles fixed, as well as the mass.
+        """
+        if value < 0:
+            raise ValueError("pt must be greater than or equal to 0.")
+        phi = self.phi
+        self.px = value*sin(phi)
+        self.py = value*cos(phi)
+        self.energy = sqrt(self.p**2+self.mass**2)
+
+    @property
+    def phi(self):
+        """
+        The azimuthal angle in the x-y plane. When phi is set, keep the z component and
+        transverse momentum unchanged. Only change the x and y components to give the
+        correct angle.
+
+        Example:
+        >>> p4 = FourMomentum.from_x_y_z_m(5,5,5,40)
+        >>> p4.phi = -1.2
+        >>> round(p4.px, 6)
+        -6.590512
+        >>> round(p4.py, 6)
+        2.562256
+        >>> round(p4.pz, 6)
+        5.0
+        >>> p4.mass
+        40
+        """
+        return atan2(self.py, self.px)
+    
+    @phi.setter
+    def phi(self, value):
+        """Set the value of phi"""
+        pt = self.pt
+        self.x = pt*sin(value)
+        self.y = pt*cos(value)
+
+    @property
+    def theta(self):
+        """
+        The polar angle of the vector. When setting theta, preserve total energy and momentum,
+        as well as the azimuthal angle.
+
+        Example:
+        >>> p4 = FourMomentum.from_x_y_z_m(5,5,5,40)
+        >>> round(p4.theta, 6)
+        0.955317
+        >>> p4.theta = -3.0
+        >>> round(p4.pz, 6)
+        -8.573587
+        >>> round(p4.phi, 6)
+        0.785398
+        """
+        return acos(self.z/self.p)
+    
+    @theta.setter
+    def theta(self, value):
+        """Set the polar angle"""
+        p = self.p
+        self.pt = p*abs(sin(value))
+        self.pz = p*cos(value)
+
+    @property
+    def eta(self):
+        """
+        The pseudo-rapidity.
+
+        Example:
+        >>> p4 = FourMomentum.from_x_y_z_m(5,5,5,40)
+        >>> p4.eta
+        0.6584789484624084
+        """
+        return -log(tan(self.theta/2))
+    
+    @eta.setter
+    def eta(self, value):
+        raise NotImplementedError("Eta cannot be set")
 
     def __add__(self, other) :
-        """Add with another FourVector"""
-        return FourVector(self.x+other.x, self.y+other.y, self.z+other.z, self.t+other.t)
+        """Add with another FourMomentum"""
+        return FourMomentum(self.x+other.x, self.y+other.y, self.z+other.z, self.t+other.t)
 
     def __iadd__(self, other) :
-        """In place add to another FourVector"""
+        """In place add to another FourMomentum"""
         self = self + other
 
     def __neg__(self, other) :
@@ -138,27 +338,27 @@ class FourVector(persistent.Persistent) :
         self.t = -self.t
 
     def __sub__(self, other) :
-        """Subtract another FourVector"""
+        """Subtract another FourMomentum"""
         return self + -other
 
     def __isub__(self, other) :
-        """In-place subtract another FourVector"""
+        """In-place subtract another FourMomentum"""
         self = self - other
 
     def __mul__(self, scalar) :
         """Multiply all components by a scalar"""
-        return FourVector(self.x*scalar, self.y*scalar, self.z*scalar, self.t*scalar)
+        return FourMomentum(self.x*scalar, self.y*scalar, self.z*scalar, self.t*scalar)
 
     def __imul__(self, scalar) :
         """Multiply all components by a scalar in place"""
         self = self*scalar
 
     def dot(self, other) :
-        """Scalar product with another FourVector"""
+        """Scalar product with another FourMomentum"""
         return self.t*other.t-self.x*other.x-self.y*other.y-self.z*other.z
 
     def __eq__(self, other) :
-        """Compare to another FourVector"""
+        """Compare to another FourMomentum"""
         return (self.x == other.x) and (self.y == other.y) and (self.z == other.z) and (self.t == other.t)
 
 class Particle(persistent.Persistent):
@@ -269,7 +469,7 @@ class Event(persistent.Persistent):
         just make a sub-class.
         """
         return sum([p.p4 for p in self.particles() if p.pdgID not in pdgIDs_to_ignore],
-                   FourVector())
+                   FourMomentum())
 
     def add_particle(self, particle) :
         """
@@ -301,7 +501,7 @@ class GenEvent(Event):
         """
         status_filter = functools.partial(_filter_by_status, status=1)
         return sum([p.p4 for p in self.particles(status_filter) if p.pdgID not in pdgIDs_to_ignore],
-                   FourVector())
+                   FourMomentum())
 
 def _filter_by_pdgId(particle, pdgId):
     """Function for filtering particles py pdgID"""
@@ -310,7 +510,12 @@ def _filter_by_pdgId(particle, pdgId):
 def _filter_by_status(particle, status):
     return particle.status == status
 
+def _test():
+    import doctest
+    doctest.testmod()
 
+if __name__ == '__main__':
+    _test()
 
 
 
