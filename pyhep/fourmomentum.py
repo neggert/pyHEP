@@ -8,7 +8,6 @@ Author: Nic Eggert (nse23@cornell.edu)
 from math import sqrt, sin, cos, tan, atan, atan2, acos, log, exp, pi
 
 import persistent
-import functools
 
 
 class FourMomentum(persistent.Persistent):
@@ -177,7 +176,7 @@ class FourMomentum(persistent.Persistent):
     def py(self):
         """The y component of the momentum"""
         return self.y
-    
+
     @py.setter
     def py(self, value):
         self.y = value
@@ -186,7 +185,7 @@ class FourMomentum(persistent.Persistent):
     def pz(self):
         """The z component of the momentum"""
         return self.z
-    
+
     @pz.setter
     def pz(self, value):
         self.z = value
@@ -195,7 +194,7 @@ class FourMomentum(persistent.Persistent):
     def mass(self):
         """The invariant mass. Immutatable"""
         return self._m
-    
+
     @mass.setter
     def mass(self, value):
         raise NotImplementedError("Cannot change the invariant mass of a FourMomentum")
@@ -221,7 +220,7 @@ class FourMomentum(persistent.Persistent):
         24.494897
         """
         return sqrt(self.x**2+self.y**2+self.z**2)
-    
+
     @p.setter
     def p(self, value):
         """Set the magnitude of the three-momentum"""
@@ -256,7 +255,6 @@ class FourMomentum(persistent.Persistent):
         self.py *= scale
         self.pz *= scale
 
-
     @property
     def pt(self):
         """
@@ -283,7 +281,7 @@ class FourMomentum(persistent.Persistent):
         0.785398
         """
         return sqrt(self.x**2+self.y**2)
-    
+
     @pt.setter
     def pt(self, value):
         """
@@ -316,7 +314,7 @@ class FourMomentum(persistent.Persistent):
         40
         """
         return atan2(self.py, self.px)
-    
+
     @phi.setter
     def phi(self, value):
         """Set the value of phi"""
@@ -341,7 +339,7 @@ class FourMomentum(persistent.Persistent):
         0.785398
         """
         return acos(self.z/self.p)
-    
+
     @theta.setter
     def theta(self, value):
         """Set the polar angle"""
@@ -360,7 +358,7 @@ class FourMomentum(persistent.Persistent):
         0.6584789484624084
         """
         return -log(tan(self.theta/2))
-    
+
     @eta.setter
     def eta(self, value):
         theta = 2*atan(-exp(value))
@@ -370,7 +368,7 @@ class FourMomentum(persistent.Persistent):
             theta += pi
         self.theta = theta
 
-    def __add__(self, other) :
+    def __add__(self, other):
         """
         Add with another FourMomentum
 
@@ -384,7 +382,7 @@ class FourMomentum(persistent.Persistent):
         """
         return self.from_x_y_z_e(self.x+other.x, self.y+other.y, self.z+other.z, self.energy+other.energy)
 
-    def __iadd__(self, other) :
+    def __iadd__(self, other):
         """
         In place add to another FourMomentum
 
@@ -397,7 +395,7 @@ class FourMomentum(persistent.Persistent):
         """
         return self + other
 
-    def __neg__(self) :
+    def __neg__(self):
         """
         Negative of all space-like components
 
@@ -414,7 +412,7 @@ class FourMomentum(persistent.Persistent):
         """
         return self.from_x_y_z_m(-self.x, -self.y, -self.z, self._m)
 
-    def __sub__(self, other) :
+    def __sub__(self, other):
         """
         Subtract another FourMomentum
 
@@ -428,7 +426,7 @@ class FourMomentum(persistent.Persistent):
         """
         return self + -other
 
-    def __isub__(self, other) :
+    def __isub__(self, other):
         """
         In place subtract another FourMomentum
 
@@ -441,7 +439,7 @@ class FourMomentum(persistent.Persistent):
         """
         return self - other
 
-    def __mul__(self, scalar) :
+    def __mul__(self, scalar):
         """
         Multiply all components by a scalar
 
@@ -468,11 +466,11 @@ class FourMomentum(persistent.Persistent):
         """
         return self*scalar
 
-    def __imul__(self, scalar) :
+    def __imul__(self, scalar):
         """Multiply all components by a scalar in place"""
         return self*scalar
 
-    def dot(self, other) :
+    def dot(self, other):
         """
         Scalar product with another FourMomentum
 
@@ -484,7 +482,7 @@ class FourMomentum(persistent.Persistent):
         """
         return self.energy*other.energy-self.x*other.x-self.y*other.y-self.z*other.z
 
-    def __eq__(self, other) :
+    def __eq__(self, other):
         """
         Compare to another FourMomentum
 
@@ -496,154 +494,6 @@ class FourMomentum(persistent.Persistent):
         """
         return (self.x == other.x) and (self.y == other.y) and (self.z == other.z) and (self._m == other._m)
 
-class Particle(persistent.Persistent):
-    """
-    Class representing a particle
-    """
-    def __init__(self, p4, **kwargs):
-        """
-        Initialize the Particle
-
-        Arguments:
-        p4 - the particle's 4-momentum
-        **kwargs - used to set any of the particle's other properties
-
-        options:
-        pdgID - Particle Data Group ID
-        charge - Electric charge of the particle
-        """
-
-        self.p4 = p4
-        self._set_properties_from_dict(kwargs)
-
-    def _set_properties_from_dict(self, prop_dict):
-        for key in prop_dict.keys():
-            setattr(self, key, prop_dict[key])
-
-    def p4():
-        doc = "The four-momentum of the particle"
-        def fget(self):
-            return self._p4
-        def fset(self, value):
-            self._p4 = value
-        return locals()
-    p4 = property(**p4())
-
-    def pdgID():
-        doc = "The Particle Data Group ID number"
-        def fget(self):
-            return self._pdgID
-        def fset(self, value):
-            self._pdgID = value
-        return locals()
-    pdgID = property(**pdgID())
-
-    def charge():
-        doc = "The particle's charge"
-        def fget(self):
-            return self._charge
-        def fset(self, value):
-            self._charge = value
-        return locals()
-    charge = property(**charge())
-
-
-class Event(persistent.Persistent):
-    """
-    Class representing an event. For now this is just a list of particles and a dict for metadata
-    """
-    def __init__(self, *args) :
-        """Initilialize empty or with a list of particles"""
-        if len(args) == 0 :
-            self.particles_ = []
-        elif len(args) == 1 :
-            self.particles_ = args[0]
-        self.metadata = {}
-
-    def metadata():
-        doc = "The metadata property."
-        def fget(self):
-            return self._metadata
-        def fset(self, value):
-            self._metadata = value
-        def fdel(self):
-            del self._metadata
-        return locals()
-    metadata = property(**metadata())
-
-    def particles(self, selection_func=None) :
-        """
-        Return particles in an event, optionally passed through a filter
-
-        Arguments:
-        selection_func - None, or a function that takes a single particle as an argument
-        and returns a boolean indicating whether the particle should be included.
-        """
-        if selection_func == None:
-            return self.particles_
-        else:
-            return filter(selection_func, self.particles_)
-
-    def particles_with_pdgId(self, pdgId):
-        particle_filter = functools.partial(_filter_by_pdgId, pdgId=pdgId)
-        return self.particles(particle_filter)
-
-    def electrons(self):
-        return self.particles_with_pdgId(11)
-
-    def muons(self):
-        return self.particles_with_pdgId(13)
-
-    def met(self, pdgIDs_to_ignore=[12, 14, 16]):
-        """
-        Return the missing transverse momentum 4-vector of
-        the event. This is just the negative sum of all the
-        particles that aren't in pdgIDs_to_ignore.
-
-        Note that if you want to exclude particles with e.g. status=3,
-        just make a sub-class.
-        """
-        return sum([p.p4 for p in self.particles() if p.pdgID not in pdgIDs_to_ignore],
-                   FourMomentum())
-
-    def add_particle(self, particle) :
-        """
-        Add a particle to the event. This can be of type Particle or any
-        class that inherits from Particle
-        """
-        self.particles_.append(particle)
-
-class GenEvent(Event):
-    """Generator-level event"""
-    def __init__(self, *args):
-        super(GenEvent, self).__init__(*args)
-
-    def add_particle(self, particle) :
-        """
-        Add a particle to the event. This can be of type GenParticle or any
-        class that inherits from GenParticle
-        """
-        if not hasattr(particle, "status"):
-            raise ValueError("Particles added to GenEvent must inherit from GenParticle")
-        self.particles_.append(particle)
-
-    def met(self, pdgIDs_to_ignore=[12, 14, 16]):
-        """
-        Return the missing transverse momentum 4-vector of
-        the event. This is just the negative sum of all the
-        particles that aren't in pdgIDs_to_ignore and have
-        status = 1.
-        """
-        status_filter = functools.partial(_filter_by_status, status=1)
-        return sum([p.p4 for p in self.particles(status_filter) if p.pdgID not in pdgIDs_to_ignore],
-                   FourMomentum())
-
-def _filter_by_pdgId(particle, pdgId):
-    """Function for filtering particles py pdgID"""
-    return abs(particle.pdgID) == pdgId
-
-def _filter_by_status(particle, status):
-    return particle.status == status
 
 def _test():
     import doctest
@@ -651,6 +501,3 @@ def _test():
 
 if __name__ == '__main__':
     _test()
-
-
-
