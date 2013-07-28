@@ -1,5 +1,35 @@
 import pyhep
 
+class Particle(persistent.Persistent):
+    """
+    Class representing a particle. This is a fairly thin
+    wrapper over the FourMomentum class, as the rest of the
+    data associated with a particle is fairly trivial.
+
+    This is mostly intended as a base class to be inherited by
+    more specific implementations of different particles.
+
+    Example:
+    >>> muon = Particle(FourMomentum.from_x_y_z_e(10,20,30,40), 13, -1)
+    >>> muon.p4.px
+    10
+    >>> muon.charge
+    -1
+    """
+    def __init__(self, p4, pdgID, charge):
+        """
+        Initialize the Particle
+
+        Arguments:
+        p4 - the particle's 4-momentum
+        pdgID - Particle Data Group ID. The sign is ignored by pyHEP functions
+        charge - Electric charge of the particle (electron has -1)
+        """
+
+        self.p4 = p4
+        self.pdgID = pdgID
+        self.charge = charge
+
 class Lepton(pyhep.Particle):
     """Lepton particle"""
     def __init__(self, p4, **kwargs):
@@ -69,4 +99,13 @@ class GenParticle(pyhep.Particle):
             del self._status
         return locals()
     status = property(**status())
+
+
+def _test():
+    import doctest
+    doctest.testmod()
+
+
+if __name__ == '__main__':
+    _test()
 
