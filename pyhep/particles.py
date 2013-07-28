@@ -1,4 +1,6 @@
-import pyhep
+import persistent
+from fourmomentum import FourMomentum
+
 
 class Particle(persistent.Persistent):
     """
@@ -30,9 +32,20 @@ class Particle(persistent.Persistent):
         self.pdgID = pdgID
         self.charge = charge
 
-class Lepton(pyhep.Particle):
-    """Lepton particle"""
-    def __init__(self, p4, **kwargs):
+
+class Lepton(Particle):
+    """
+    Lepton particle. Inherits from particle, adding a check on the charge
+    (must be +/-1) and an isolation variable. The isolation is optional
+    and must be set after construction.
+
+    Example:
+    >>> l = Lepton(FourMomentum.from_x_y_z_m(10,20,30,0.000511), 11, 1)
+    >>> l.isolation = 0.3
+    >>> l.isolation
+    0.3
+    """
+    def __init__(self, p4, pdgID, charge):
         """
         Initialize the Particle
 
@@ -45,60 +58,68 @@ class Lepton(pyhep.Particle):
         pdgId - Particle Data Group ID
         isolation - isolation variable for the particle
         """
+        if charge not in [-1, 1]:
+            raise ValueError("Lepton charge must be +/-1")
 
-        super(Lepton, self).__init__(p4, **kwargs)
+        super(Lepton, self).__init__(p4, pdgID, charge)
+        self.isolation = 0.
 
-    def isolation():
-        doc = "The isolation property."
-        def fget(self):
-            try :
-                return self._isolation
-            except AttributeError :
-                raise UnboundLocalError('isolation must be set before it can be used')
-        def fset(self, value):
-            self._isolation = value
-        return locals()
-    isolation = property(**isolation())
 
 class Electron(Lepton):
-    """Electron particle"""
-    def __init__(self, p4, **kwargs):
-        super(Electron, self).__init__(p4, **kwargs)
-        self.pdgID = 11
+    """Electron particle. Lepton with pdgID automatically set to 11"""
+    def __init__(self, p4, charge):
+        """
+        Initialize the electron from a FourMomentum and a charge
+
+        Example:
+        >>> e = Electron(FourMomentum.from_x_y_z_m(10,20,30,0.000511), 1)
+        >>> e.pdgID
+        11
+        """
+        super(Electron, self).__init__(p4, 11, charge)
+
 
 class Muon(Lepton):
-    """Muon particle"""
-    def __init__(self, p4, **kwargs):
-        super(Muon, self).__init__(p4, **kwargs)
-        self.pdgID = 13
+    """Muon. Lepton with pdgID automatically set to 13"""
+    def __init__(self, p4, charge):
+        """
+        Initialize the muon from a FourMomentum and a charge
 
-class GenParticle(pyhep.Particle):
-    """Particle from an event generator. Holds status information"""
-    def __init__(self, p4, **kwargs):
+        Example:
+        >>> m = Muon(FourMomentum.from_x_y_z_m(10,20,30,0.106), 1)
+        >>> m.pdgID
+        13
+        """
+        super(Muon, self).__init__(p4, 13, charge)
+
+
+class GenParticle(Particle):
+    """
+    Particle from an event generator. Inherits from Particle and adds an
+    extra member to hold the generator status.
+
+    Example:
+    >>> muon = GenParticle(FourMomentum.from_x_y_z_e(10,20,30,40), 13, -1, 3)
+    >>> muon.p4.px
+    10
+    >>> muon.charge
+    -1
+    >>> muon.status
+    3
+    """
+    def __init__(self, p4, pdgID, charge, status):
         """
         Initialize the Particle
 
         Arguments:
         p4 - the particle's 4-momentum
-        **kwargs - used to set any of the particle's other properties
-
-        options:
-        charge - Electric charge of the particle
-        pdgId - Particle Data Group ID
-        status - Generator status code
+        pdgID - Particle Data Group ID. The sign is ignored by pyHEP functions
+        charge - Electric charge of the particle (electron has -1)
+        status - The Generator status of the particle.
         """
-        super(GenParticle, self).__init__(p4, **kwargs)
 
-    def status():
-        doc = "The status property."
-        def fget(self):
-            return self._status
-        def fset(self, value):
-            self._status = value
-        def fdel(self):
-            del self._status
-        return locals()
-    status = property(**status())
+        super(GenParticle, self).__init__(p4, pdgID, charge)
+        self.status = status
 
 
 def _test():
