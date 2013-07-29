@@ -121,9 +121,9 @@ class FourMomentum(persistent.Persistent):
         Example:
         >>> p4 = FourMomentum.from_pt_eta_phi_m(30,1,0.5,40)
         >>> round(p4.theta, 6)
-        0.672786
+        0.523284
         >>> round(p4.energy, 6)
-        51.627351
+        57.067644
         """
         x = pt*sin(phi)
         y = pt*sin(phi)
@@ -132,7 +132,7 @@ class FourMomentum(persistent.Persistent):
             theta -= pi
         while theta < 0:
             theta += pi
-        z = pt*tan(theta)
+        z = pt/tan(theta)
         m = m
         return cls.from_x_y_z_m(x, y, z, m)
 
@@ -153,7 +153,7 @@ class FourMomentum(persistent.Persistent):
             theta -= pi
         while theta < 0:
             theta += pi
-        z = pt*tan(theta)
+        z = pt/tan(theta)
         return cls.from_x_y_z_e(x, y, z, e)
 
     @property
@@ -487,6 +487,18 @@ class FourMomentum(persistent.Persistent):
         """
         return (self.x == other.x) and (self.y == other.y) and (self.z == other.z) and (self._m == other._m)
 
+    def almost_equal(self, other):
+        """
+        Compare to another FourMomentum
+
+        Example
+        >>> pa = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> pb = FourMomentum.from_x_y_z_e(10,20,30,40)
+        >>> pa == pb
+        True
+        """
+        return (round(self.x, 6) == round(other.x, 6)) and (round(self.y, 6) == round(other.y, 6))\
+                and (round(self.z, 6) == round(other.z, 6)) and (round(self._m, 6) == round(other._m, 6))
 
 def _test():
     import doctest
